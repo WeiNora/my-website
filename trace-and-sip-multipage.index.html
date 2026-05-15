@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trace & Sip 心靈咖啡所</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,600;1,300&family=Noto+Serif+TC:wght@300;400;700;900&family=Noto+Sans+TC:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════
+   TOKENS
+═══════════════════════════════════ */
+:root {
+  --ink:       #2a1f17;
+  --bark:      #5c3d28;
+  --caramel:   #9b6a3c;
+  --latte:     #c9a97a;
+  --cream:     #f7f2ea;
+  --parchment: #ede5d4;
+  --white:     #fdfaf5;
+  --rust:      #b85c38;
+  --sage:      #7d9270;
+  --blush:     #c9908a;
+  --ease:      cubic-bezier(0.4,0,0.2,1);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { width:100%; height:100%; overflow:hidden; }
+
+body {
+  font-family: 'Noto Sans TC', sans-serif;
+  background: var(--ink);
+  color: var(--ink);
+}
+
+/* grain */
+body::after {
+  content:'';
+  position:fixed; inset:0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+  pointer-events:none; z-index:9999;
+}
+
+/* ═══════════════════════════════════
+   SIDEBAR NAV
+═══════════════════════════════════ */
+#sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: 220px;
+  background: var(--ink);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  padding: 40px 0;
+  border-right: 1px solid rgba(201,169,122,0.1);
+}
+
+.sidebar-logo {
+  padding: 0 32px 40px;
+  border-bottom: 1px solid rgba(201,169,122,0.1);
+  margin-bottom: 32px;
+}
+.sidebar-logo h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--cream);
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+.sidebar-logo h1 em { color: var(--latte); font-style: italic; font-weight: 300; }
+.sidebar-logo p {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 10px;
+  color: rgba(201,169,122,0.5);
+  letter-spacing: 0.2em;
+  margin-top: 6px;
+}
+
+.nav-items {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 0 16px;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.25s var(--ease);
+  position: relative;
+  overflow: hidden;
+}
+.nav-item::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(201,169,122,0.07);
+  transform: translateX(-100%);
+  transition: transform 0.3s var(--ease);
+}
+.nav-item:hover::before { transform: translateX(0); }
+
+.nav-item.active {
+  background: rgba(201,169,122,0.12);
+}
+.nav-item.active::after {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  background: var(--latte);
+  border-radius: 0 2px 2px 0;
+}
+
+.nav-icon { font-size: 16px; flex-shrink: 0; opacity: 0.8; }
+
+.nav-label {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 13px;
+  color: rgba(245,240,234,0.55);
+  transition: color 0.25s;
+  letter-spacing: 0.04em;
+}
+.nav-item:hover .nav-label { color: var(--latte); }
+.nav-item.active .nav-label { color: var(--latte); font-weight: 700; }
+
+.sidebar-bottom {
+  padding: 24px 32px 0;
+  border-top: 1px solid rgba(201,169,122,0.1);
+}
+.sidebar-bottom p {
+  font-size: 10px;
+  color: rgba(201,169,122,0.3);
+  letter-spacing: 0.14em;
+  line-height: 1.8;
+}
+
+/* ═══════════════════════════════════
+   PAGE AREA
+═══════════════════════════════════ */
+#pages {
+  position: fixed;
+  left: 220px; top: 0; right: 0; bottom: 0;
+  overflow: hidden;
+}
+
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  opacity: 0;
+  transform: translateX(40px);
+  pointer-events: none;
+  transition: opacity 0.45s var(--ease), transform 0.45s var(--ease);
+}
+.page.active {
+  opacity: 1;
+  transform: translateX(0);
+  pointer-events: all;
+}
+.page.exit {
+  opacity: 0;
+  transform: translateX(-30px);
+}
+
+/* scrollbar */
+.page::-webkit-scrollbar { width: 4px; }
+.page::-webkit-scrollbar-track { background: transparent; }
+.page::-webkit-scrollbar-thumb { background: rgba(201,169,122,0.3); border-radius: 4px; }
+
+/* ═══════════════════════════════════
+   COMMON PAGE LAYOUT
+═══════════════════════════════════ */
+.page-inner {
+  min-height: 100%;
+  padding: 64px 72px 80px;
+  max-width: 960px;
+}
+
+.page-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  color: var(--caramel);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+.page-eyebrow::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--caramel);
+  opacity: 0.5;
+}
+
+.page-title {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  line-height: 1.05;
+  margin-bottom: 40px;
+}
+
+/* ═══════════════════════════════════
+   PAGE 1 — HOME
+═══════════════════════════════════ */
+#page-home {
+  background:
+    radial-gradient(ellipse 70% 60% at 70% 40%, #5c3d28 0%, transparent 55%),
+    radial-gradient(ellipse 50% 70% at 20% 75%, #3d2b1e 0%, transparent 50%),
+    linear-gradient(150deg, #1e1510 0%, #2a1f17 50%, #1a1208 100%);
+}
+
+.home-inner {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100%;
+  padding: 80px 80px 80px 72px;
+  position: relative;
+}
+
+/* floating rings */
+.ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid rgba(201,169,122,0.1);
+  pointer-events: none;
+  animation: floatRing 7s ease-in-out infinite;
+}
+.ring:nth-child(1){ width:480px;height:480px;top:-100px;right:-80px; }
+.ring:nth-child(2){ width:300px;height:300px;top:-40px;right:0;border-color:rgba(201,169,122,0.07);animation-delay:1.2s; }
+.ring:nth-child(3){ width:140px;height:140px;bottom:120px;right:200px;animation-delay:2.5s; }
+
+@keyframes floatRing {
+  0%,100%{ transform:translateY(0) }
+  50%    { transform:translateY(-16px) }
+}
+
+.home-tag {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: var(--latte);
+  margin-bottom: 28px;
+  opacity: 0;
+  animation: fadeUp 0.8s 0.3s var(--ease) forwards;
+}
+.home-title-en {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(64px, 8vw, 108px);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 0.9;
+  margin-bottom: 16px;
+  opacity: 0;
+  animation: fadeUp 0.9s 0.5s var(--ease) forwards;
+}
+.home-title-en em { color: var(--latte); font-style: italic; }
+
+.home-title-zh {
+  font-family: 'Noto Serif TC', serif;
+  font-size: clamp(16px, 2.2vw, 22px);
+  font-weight: 300;
+  color: rgba(245,240,234,0.45);
+  letter-spacing: 0.45em;
+  margin-bottom: 48px;
+  opacity: 0;
+  animation: fadeUp 0.9s 0.7s var(--ease) forwards;
+}
+
+.home-desc {
+  font-size: 15px;
+  line-height: 2.1;
+  color: rgba(245,240,234,0.6);
+  max-width: 480px;
+  margin-bottom: 56px;
+  opacity: 0;
+  animation: fadeUp 0.9s 0.9s var(--ease) forwards;
+}
+
+.home-actions {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  opacity: 0;
+  animation: fadeUp 0.9s 1.1s var(--ease) forwards;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 30px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  font-weight: 500;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.3s var(--ease);
+  border: none;
+}
+.btn-primary { background: var(--latte); color: var(--ink); }
+.btn-primary:hover { background: var(--cream); transform: translateY(-2px); box-shadow: 0 8px 24px rgba(201,169,122,0.3); }
+.btn-ghost { background: transparent; border: 1.5px solid rgba(245,240,234,0.25); color: rgba(245,240,234,0.7); }
+.btn-ghost:hover { border-color: var(--latte); color: var(--latte); transform: translateY(-2px); }
+
+@keyframes fadeUp {
+  from { opacity:0; transform:translateY(20px); }
+  to   { opacity:1; transform:translateY(0); }
+}
+
+/* home stats */
+.home-stats {
+  position: absolute;
+  bottom: 48px; right: 72px;
+  display: flex;
+  gap: 36px;
+  opacity: 0;
+  animation: fadeUp 0.9s 1.3s var(--ease) forwards;
+}
+.stat {
+  text-align: right;
+}
+.stat-num {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--latte);
+  line-height: 1;
+}
+.stat-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  color: rgba(245,240,234,0.3);
+  margin-top: 4px;
+}
+
+/* ═══════════════════════════════════
+   PAGE 2 — ABOUT
+═══════════════════════════════════ */
+#page-about { background: var(--white); }
+
+.about-hero {
+  background: linear-gradient(135deg, var(--ink) 0%, var(--bark) 100%);
+  padding: 72px;
+  margin-bottom: 64px;
+  position: relative;
+  overflow: hidden;
+}
+.about-hero::before {
+  content: '';
+  position: absolute;
+  right: -60px; top: -60px;
+  width: 320px; height: 320px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,169,122,0.15);
+}
+.about-hero::after {
+  content: '';
+  position: absolute;
+  right: 0; top: 0;
+  width: 200px; height: 200px;
+  border-radius: 50%;
+  border: 1px solid rgba(201,169,122,0.08);
+}
+
+.about-hero h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+.about-hero h2 em { color: var(--latte); font-style: italic; }
+.about-hero p {
+  font-size: 15px;
+  line-height: 2.1;
+  color: rgba(245,240,234,0.65);
+  max-width: 540px;
+  position: relative;
+  z-index: 1;
+}
+
+.about-section {
+  padding: 0 72px;
+  margin-bottom: 56px;
+}
+.about-section h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.about-section h3::before {
+  content: '';
+  width: 20px; height: 2px;
+  background: var(--caramel);
+  flex-shrink: 0;
+}
+.about-section p {
+  font-size: 14px;
+  line-height: 2.1;
+  color: var(--bark);
+  margin-bottom: 14px;
+}
+
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  padding: 0 72px;
+  margin-bottom: 64px;
+}
+.value-card {
+  background: var(--parchment);
+  padding: 28px 24px;
+  border-radius: 2px;
+  border-bottom: 3px solid var(--latte);
+  transition: transform 0.3s var(--ease);
+}
+.value-card:hover { transform: translateY(-4px); }
+.value-card .en {
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: var(--caramel);
+  margin-bottom: 8px;
+  display: block;
+}
+.value-card h4 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+.value-card p { font-size: 12px; line-height: 1.9; color: var(--bark); }
+
+/* ═══════════════════════════════════
+   PAGE 3 — STORY (Journey)
+═══════════════════════════════════ */
+#page-story {
+  background: var(--parchment);
+}
+
+.story-hero {
+  background: var(--ink);
+  padding: 72px;
+  margin-bottom: 64px;
+}
+.story-hero h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(36px, 5vw, 58px);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 20px;
+}
+.story-hero h2 em { color: var(--latte); font-style: italic; }
+.story-hero p { font-size: 14px; line-height: 2.1; color: rgba(245,240,234,0.6); max-width: 500px; }
+
+.story-body { padding: 0 72px 72px; }
+
+.story-quote {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 22px;
+  font-style: italic;
+  color: var(--bark);
+  line-height: 1.7;
+  border-left: 3px solid var(--latte);
+  padding: 20px 28px;
+  background: rgba(201,169,122,0.1);
+  border-radius: 0 2px 2px 0;
+  margin-bottom: 48px;
+}
+
+.journey-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  position: relative;
+}
+.journey-timeline::before {
+  content: '';
+  position: absolute;
+  left: 27px; top: 0; bottom: 0;
+  width: 1px;
+  background: linear-gradient(to bottom, var(--latte), rgba(201,169,122,0.2));
+}
+
+.timeline-item {
+  display: flex;
+  gap: 28px;
+  padding-bottom: 40px;
+  align-items: flex-start;
+}
+.timeline-item:last-child { padding-bottom: 0; }
+
+.timeline-dot {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: var(--white);
+  border: 2px solid var(--latte);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+  transition: all 0.3s;
+}
+.timeline-item:hover .timeline-dot {
+  background: var(--latte);
+  transform: scale(1.1);
+}
+
+.timeline-content {
+  flex: 1;
+  padding-top: 12px;
+}
+.timeline-content h4 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+.timeline-content p {
+  font-size: 13px;
+  line-height: 2;
+  color: var(--bark);
+}
+
+/* ═══════════════════════════════════
+   PAGE 4 — SERVICES
+═══════════════════════════════════ */
+#page-services { background: var(--white); }
+
+.services-header-block {
+  background: linear-gradient(135deg, #9b6a3c, #5c3d28);
+  padding: 72px;
+  margin-bottom: 56px;
+}
+.services-header-block h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(36px,5vw,58px);
+  font-weight: 300;
+  color: var(--cream);
+  margin-bottom: 16px;
+}
+.services-header-block p { font-size:14px; line-height:2; color:rgba(245,240,234,0.65); max-width:500px; }
+
+.services-list { padding: 0 72px 72px; display: flex; flex-direction: column; gap: 24px; }
+
+.service-row {
+  display: grid;
+  grid-template-columns: 80px 1fr auto;
+  gap: 28px;
+  align-items: center;
+  background: var(--parchment);
+  border-radius: 3px;
+  padding: 32px 36px;
+  transition: all 0.3s var(--ease);
+  border: 1.5px solid transparent;
+}
+.service-row:hover {
+  border-color: var(--latte);
+  box-shadow: 0 8px 40px rgba(155,106,60,0.1);
+  transform: translateY(-2px);
+}
+
+.service-row-icon {
+  font-size: 38px;
+  text-align: center;
+}
+.service-row-info h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.service-row-info .badge {
+  display: inline-block;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  padding: 3px 10px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+}
+.badge-orange { background: rgba(155,106,60,0.15); color: var(--caramel); }
+.badge-pink   { background: rgba(201,144,138,0.15); color: var(--blush); }
+.badge-sage   { background: rgba(125,146,112,0.15); color: var(--sage); }
+
+.service-row-info p { font-size: 13px; line-height: 1.9; color: var(--bark); max-width: 480px; }
+.service-features-mini {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 10px;
+}
+.service-features-mini li { font-size: 12px; color: var(--bark); display: flex; gap: 8px; }
+.service-features-mini li::before { content: '—'; color: var(--latte); }
+
+.service-row-price { text-align: right; white-space: nowrap; }
+.price-big {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 38px;
+  font-weight: 600;
+  color: var(--caramel);
+  line-height: 1;
+}
+.price-small { font-size: 12px; color: var(--caramel); margin-bottom: 16px; margin-top: 2px; }
+
+.btn-book {
+  display: block;
+  padding: 10px 20px;
+  background: var(--ink);
+  color: var(--cream);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  border-radius: 2px;
+  cursor: pointer;
+  border: none;
+  font-family: 'Noto Sans TC', sans-serif;
+  transition: all 0.3s;
+  text-align: center;
+}
+.btn-book:hover { background: var(--bark); transform: translateY(-1px); }
+
+/* ═══════════════════════════════════
+   PAGE 5 — BOOKING
+═══════════════════════════════════ */
+#page-booking { background: var(--parchment); }
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100%;
+}
+
+.booking-left {
+  background: var(--ink);
+  padding: 72px 56px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+.booking-left::before {
+  content:'';
+  position:absolute;
+  bottom:-80px; right:-80px;
+  width:300px;height:300px;
+  border-radius:50%;
+  border:1px solid rgba(201,169,122,0.1);
+}
+
+.booking-left h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: clamp(32px,4vw,50px);
+  font-weight: 300;
+  color: var(--cream);
+  line-height: 1.1;
+  margin-bottom: 28px;
+}
+.booking-left h2 em { color: var(--latte); font-style: italic; }
+.booking-left p { font-size: 14px; line-height: 2.1; color: rgba(245,240,234,0.6); margin-bottom: 40px; }
+
+.info-items { display: flex; flex-direction: column; gap: 20px; }
+.info-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+.info-em { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+.info-item h4 { font-size: 10px; letter-spacing: 0.16em; color: var(--latte); margin-bottom: 3px; font-weight: 500; }
+.info-item p  { font-size: 13px; color: rgba(245,240,234,0.55); line-height: 1.7; }
+
+.booking-right {
+  background: var(--white);
+  padding: 72px 56px;
+  overflow-y: auto;
+}
+.booking-right h3 {
+  font-family: 'Noto Serif TC', serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 36px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+.form-group label {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  color: var(--caramel);
+  font-weight: 500;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  background: var(--parchment);
+  border: 1.5px solid transparent;
+  border-radius: 2px;
+  padding: 13px 16px;
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.25s, background 0.25s;
+  width: 100%;
+}
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { border-color: var(--caramel); background: var(--white); }
+.form-group textarea { resize: vertical; min-height: 88px; }
+.form-group select { cursor: pointer; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+.form-submit {
+  width: 100%;
+  padding: 15px;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: 'Noto Sans TC', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  border: none;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: all 0.3s;
+  margin-top: 8px;
+}
+.form-submit:hover { background: var(--bark); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(42,31,23,0.2); }
+
+.form-note { font-size: 11px; color: rgba(42,31,23,0.35); text-align: center; margin-top: 12px; line-height: 1.7; }
+
+.form-success {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 16px;
+  min-height: 400px;
+}
+.form-success.show { display: flex; }
+.form-success .icon { font-size: 56px; }
+.form-success h3 { font-family:'Noto Serif TC',serif; font-size:22px; color:var(--ink); }
+.form-success p { font-size:13px; color:var(--bark); line-height:2; }
+
+/* ═══════════════════════════════════
+   MOBILE NAV
+═══════════════════════════════════ */
+#mobile-nav {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: rgba(42,31,23,0.95);
+  backdrop-filter: blur(12px);
+  z-index: 200;
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(201,169,122,0.15);
+}
+.mobile-nav-items {
+  display: flex;
+  justify-content: space-around;
+}
+.mobile-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  padding: 6px 12px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+.mobile-nav-item.active { background: rgba(201,169,122,0.15); }
+.mobile-nav-item .m-icon { font-size: 20px; }
+.mobile-nav-item .m-label {
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: rgba(245,240,234,0.4);
+}
+.mobile-nav-item.active .m-label { color: var(--latte); }
+
+/* ═══════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════ */
+@media (max-width: 900px) {
+  #sidebar { display: none; }
+  #pages { left: 0; bottom: 72px; }
+  #mobile-nav { display: block; }
+  .page-inner { padding: 40px 28px 60px; }
+  .about-hero, .story-hero, .services-header-block { padding: 40px 28px; margin-bottom: 36px; }
+  .about-section, .story-body, .services-list { padding: 0 28px 48px; }
+  .values-grid { grid-template-columns: 1fr; padding: 0 28px; margin-bottom: 40px; }
+  .service-row { grid-template-columns: 1fr; gap: 16px; padding: 24px; }
+  .service-row-price { text-align: left; display: flex; align-items: center; gap: 16px; }
+  .booking-layout { grid-template-columns: 1fr; }
+  .booking-left { padding: 40px 28px; }
+  .booking-right { padding: 40px 28px; }
+  .home-inner { padding: 60px 28px; }
+  .home-stats { position: static; margin-top: 48px; justify-content: flex-start; }
+  .form-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ SIDEBAR ═══ -->
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <h1>Trace <em>&</em> Sip</h1>
+    <p>心靈咖啡所</p>
+  </div>
+  <div class="nav-items">
+    <div class="nav-item active" onclick="goTo('home')">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-label">首頁</span>
+    </div>
+    <div class="nav-item" onclick="goTo('about')">
+      <span class="nav-icon">☕</span>
+      <span class="nav-label">關於我們</span>
+    </div>
+    <div class="nav-item" onclick="goTo('story')">
+      <span class="nav-icon">🌿</span>
+      <span class="nav-label">品牌故事</span>
+    </div>
+    <div class="nav-item" onclick="goTo('services')">
+      <span class="nav-icon">🤝</span>
+      <span class="nav-label">服務項目</span>
+    </div>
+    <div class="nav-item" onclick="goTo('booking')">
+      <span class="nav-icon">📅</span>
+      <span class="nav-label">預約 / 聯絡</span>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <p>週二—週日<br>10:00 — 21:00</p>
+  </div>
+</nav>
+
+<!-- ═══ MOBILE NAV ═══ -->
+<div id="mobile-nav">
+  <div class="mobile-nav-items">
+    <div class="mobile-nav-item active" onclick="goTo('home')">
+      <span class="m-icon">🏠</span><span class="m-label">首頁</span>
+    </div>
+    <div class="mobile-nav-item" onclick="goTo('about')">
+      <span class="m-icon">☕</span><span class="m-label">關於</span>
+    </div>
+    <div class="mobile-nav-item" onclick="goTo('story')">
+      <span class="m-icon">🌿</span><span class="m-label">故事</span>
+    </div>
+    <div class="mobile-nav-item" onclick="goTo('services')">
+      <span class="m-icon">🤝</span><span class="m-label">服務</span>
+    </div>
+    <div class="mobile-nav-item" onclick="goTo('booking')">
+      <span class="m-icon">📅</span><span class="m-label">預約</span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PAGES ═══ -->
+<div id="pages">
+
+  <!-- PAGE: HOME -->
+  <div class="page active" id="page-home">
+    <div class="home-inner">
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <div class="ring"></div>
+      <p class="home-tag">心靈咖啡所 · 台灣 · Est. 2026</p>
+      <h1 class="home-title-en">Trace <em>&</em><br>Sip</h1>
+      <p class="home-title-zh">心靈咖啡所</p>
+      <p class="home-desc">不只是咖啡，而是一個可以<br>安心放下自己的地方。</p>
+      <div class="home-actions">
+        <button class="btn btn-primary" onclick="goTo('booking')">立即預約</button>
+        <button class="btn btn-ghost" onclick="goTo('about')">了解更多 →</button>
+      </div>
+      <div class="home-stats">
+        <div class="stat">
+          <div class="stat-num">3</div>
+          <div class="stat-label">服務類型</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">隱私保障</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">低門檻</div>
+          <div class="stat-label">接觸心理支持</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: ABOUT -->
+  <div class="page" id="page-about">
+    <div class="about-hero">
+      <div class="page-eyebrow" style="color:var(--latte);">關於 Trace & Sip</div>
+      <h2>喝咖啡，<br>是放鬆的<em>起點</em></h2>
+      <p>在都市快速的節奏下，許多人習慣用一杯咖啡來放鬆，卻很少有機會真正面對內在的情緒。Trace & Sip 心靈咖啡所，正是為此而生。</p>
+    </div>
+    <div class="about-section">
+      <h3>我們是誰</h3>
+      <p>我們打造了一個結合「咖啡空間」與「心理支持」的複合式場域——不帶壓力、不貼標籤，讓心理照顧成為一種日常生活風格。</p>
+      <p>走進 Trace & Sip，你可以只點一杯咖啡，靜靜地待著；也可以在準備好的時候，走上二樓的隱密空間，開始一段自我修復的旅程。</p>
+    </div>
+    <div class="about-section">
+      <h3>我們的使命</h3>
+      <p>回應現代都市人的心理健康需求，透過動態定位與低門檻服務，建立差異化的體驗，打破心理諮商的刻板印象，讓「照顧自己的心」成為一件輕鬆自然的事。</p>
+    </div>
+    <div class="values-grid">
+      <div class="value-card">
+        <span class="en">Sustainable Well-being</span>
+        <h4>永續心靈</h4>
+        <p>不是一次性的體驗，而是長期陪伴你的日常習慣。</p>
+      </div>
+      <div class="value-card">
+        <span class="en">Anti-mainstream Uniqueness</span>
+        <h4>反主流獨特</h4>
+        <p>不走大眾化路線，打造只屬於你的個人化療癒空間。</p>
+      </div>
+      <div class="value-card">
+        <span class="en">Warm Efficiency</span>
+        <h4>溫暖效率</h4>
+        <p>溫柔但不拖沓，在最短的時間給你最真誠的陪伴與支持。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: STORY -->
+  <div class="page" id="page-story">
+    <div class="story-hero">
+      <div class="page-eyebrow" style="color:var(--latte);">品牌故事</div>
+      <h2>從<em>壓力</em>到療癒<br>的旅程</h2>
+      <p>每一位走進 Trace & Sip 的人，都帶著屬於自己的故事。我們在這裡，陪你走每一步。</p>
+    </div>
+    <div class="story-body">
+      <p class="story-quote">
+        「許多人習慣透過喝咖啡放鬆，卻很少有機會真正面對內在情緒。一位長期處於壓力中的上班族，在某天走進 Trace & Sip，不只是點了一杯咖啡，進而走上二樓的隱密空間，開始正視自己的狀態，開啟了一段自我修復的旅程。」
+      </p>
+      <div class="journey-timeline">
+        <div class="timeline-item">
+          <div class="timeline-dot">☁️</div>
+          <div class="timeline-content">
+            <h4>壓力——快節奏生活的重量</h4>
+            <p>都市化進程加速、工作與生活邊界模糊，讓現代人長期處於高壓狀態，情緒無處釋放，心理健康被忽視。</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot">☕</div>
+          <div class="timeline-content">
+            <h4>放鬆——給自己一個喘息空間</h4>
+            <p>走進 Trace & Sip，點一杯手沖，找一個舒適的角落。不需要任何理由，只是給自己片刻的安靜。</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot">💬</div>
+          <div class="timeline-content">
+            <h4>表達——在安全的環境說出心裡的話</h4>
+            <p>在輕鬆的氛圍中，你可以選擇與我們的諮詢師聊聊。沒有標籤，沒有評判，只有真誠的傾聽。</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot">💡</div>
+          <div class="timeline-content">
+            <h4>理解——認識自己的情緒</h4>
+            <p>透過專業引導，開始看見情緒背後的原因，培養自我覺察的能力，提升心理韌性。</p>
+          </div>
+        </div>
+        <div class="timeline-item">
+          <div class="timeline-dot">💚</div>
+          <div class="timeline-content">
+            <h4>療癒——帶著更輕盈的心重新出發</h4>
+            <p>不是一下子就好，而是一步一步地，帶著更多對自己的理解，走回日常生活。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: SERVICES -->
+  <div class="page" id="page-services">
+    <div class="services-header-block">
+      <div class="page-eyebrow" style="color:rgba(245,240,234,0.5);">我們的服務</div>
+      <h2>為你準備的<br>每一種陪伴</h2>
+      <p>不管你今天需要的是一杯咖啡、一個傾聽的人，還是專業的心理支持，我們都在這裡。</p>
+    </div>
+    <div class="services-list">
+
+      <div class="service-row">
+        <div class="service-row-icon">☕</div>
+        <div class="service-row-info">
+          <span class="badge badge-orange">最受歡迎</span>
+          <h3>咖啡空間</h3>
+          <p>精心挑選的單品咖啡與輕食，搭配溫馨舒適的空間設計，讓你在忙碌日常中找到片刻喘息。</p>
+          <ul class="service-features-mini">
+            <li>精品單品咖啡 & 特調飲品</li>
+            <li>手工輕食與甜點</li>
+            <li>舒適閱讀 / 辦公環境</li>
+            <li>情緒日記本免費取用</li>
+          </ul>
+        </div>
+        <div class="service-row-price">
+          <div class="price-big">150</div>
+          <div class="price-small">元起 / 杯</div>
+          <button class="btn-book" onclick="goTo('booking')">預約座位</button>
+        </div>
+      </div>
+
+      <div class="service-row">
+        <div class="service-row-icon">🤝</div>
+        <div class="service-row-info">
+          <span class="badge badge-pink">低門檻</span>
+          <h3>單次簡易諮詢</h3>
+          <p>不需要長期預約，隨時走進來，在輕鬆氛圍中與心理諮詢師聊聊，低門檻地接觸心理支持。</p>
+          <ul class="service-features-mini">
+            <li>專業心理諮詢師陪談</li>
+            <li>情緒評估與資源引導</li>
+            <li>完全保密，化名紀錄</li>
+            <li>含一杯飲品</li>
+          </ul>
+        </div>
+        <div class="service-row-price">
+          <div class="price-big">500</div>
+          <div class="price-small">元 / 30分鐘</div>
+          <button class="btn-book" onclick="goTo('booking')">立即預約</button>
+        </div>
+      </div>
+
+      <div class="service-row">
+        <div class="service-row-icon">🌿</div>
+        <div class="service-row-info">
+          <span class="badge badge-sage">深度療癒</span>
+          <h3>預約式諮商療程</h3>
+          <p>適合希望深入探索自我、持續改變的你。與固定的心理師建立信任關係，展開有計劃的療癒旅程。</p>
+          <ul class="service-features-mini">
+            <li>固定心理師一對一</li>
+            <li>個人化諮商計劃制定</li>
+            <li>二樓獨立隱密空間</li>
+            <li>可提供轉介衛政 / 社政資源</li>
+          </ul>
+        </div>
+        <div class="service-row-price">
+          <div class="price-big">1,800</div>
+          <div class="price-small">元 / 50分鐘</div>
+          <button class="btn-book" onclick="goTo('booking')">了解詳情</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- PAGE: BOOKING -->
+  <div class="page" id="page-booking">
+    <div class="booking-layout">
+      <div class="booking-left">
+        <div class="page-eyebrow" style="color:rgba(201,169,122,0.5);">預約 / 聯絡</div>
+        <h2>準備好了，<br>就來找<em>我們</em></h2>
+        <p>不管你準備好了沒有，Trace & Sip 的門都為你敞開。填寫預約表單，或直接走進來都歡迎。</p>
+        <div class="info-items">
+          <div class="info-item">
+            <span class="info-em">📍</span>
+            <div>
+              <h4>地址</h4>
+              <p>台北市大安區復興南路一段 ×× 號<br>（捷運大安站 3 號出口，步行 5 分鐘）</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-em">🕐</span>
+            <div>
+              <h4>營業時間</h4>
+              <p>週二至週日　10:00 — 21:00<br>週一公休</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-em">📞</span>
+            <div>
+              <h4>聯絡方式</h4>
+              <p>02-XXXX-XXXX<br>info@traceandsip.tw</p>
+            </div>
+          </div>
+          <div class="info-item">
+            <span class="info-em">🔒</span>
+            <div>
+              <h4>隱私保障</h4>
+              <p>心理服務紀錄採化名處理，<br>與消費資料完全物理性隔離。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="booking-right">
+        <div id="formArea">
+          <h3>預約 / 諮詢表單</h3>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>您的姓名</label>
+              <input type="text" id="f-name" placeholder="王小明" />
+            </div>
+            <div class="form-group">
+              <label>聯絡電話</label>
+              <input type="tel" id="f-phone" placeholder="0912-345-678" />
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label>電子郵件</label>
+              <input type="email" id="f-email" placeholder="example@email.com" />
+            </div>
+            <div class="form-group">
+              <label>希望日期</label>
+              <input type="date" id="f-date" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label>預約項目</label>
+            <select id="f-service">
+              <option value="">請選擇服務項目</option>
+              <option value="coffee">☕ 咖啡空間座位預約</option>
+              <option value="consult">🤝 單次簡易諮詢（30分鐘）</option>
+              <option value="therapy">🌿 預約式諮商療程（50分鐘）</option>
+              <option value="info">📩 想先詢問，了解更多</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>想說的話（選填）</label>
+            <textarea id="f-message" placeholder="有什麼特別的需求，或想讓我們事先知道的，都可以在這裡告訴我們。我們不急，慢慢說。"></textarea>
+          </div>
+          <button class="form-submit" onclick="submitForm()">送出預約申請 →</button>
+          <p class="form-note">我們將於 24 小時內聯繫您，確認預約細節。<br>所有資料僅用於預約確認，絕不外流。</p>
+        </div>
+
+        <div class="form-success" id="formSuccess">
+          <div class="icon">☕</div>
+          <h3>收到你的預約了！</h3>
+          <p>謝謝你願意給自己這個空間。<br>我們會在 24 小時內聯繫你，確認細節。<br><br>在那之前，先好好休息一下。</p>
+          <button class="btn-book" style="margin-top:12px;display:inline-block;" onclick="resetForm()">再次預約</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- end #pages -->
+
+<script>
+const pages = ['home','about','story','services','booking'];
+let currentPage = 'home';
+let transitioning = false;
+
+function goTo(pageId) {
+  if (transitioning || pageId === currentPage) return;
+  transitioning = true;
+
+  // hide old
+  const old = document.getElementById('page-' + currentPage);
+  old.classList.add('exit');
+  old.classList.remove('active');
+
+  currentPage = pageId;
+
+  // show new
+  const next = document.getElementById('page-' + pageId);
+  next.scrollTop = 0;
+
+  requestAnimationFrame(() => {
+    next.classList.add('active');
+    setTimeout(() => {
+      old.classList.remove('exit');
+      transitioning = false;
+    }, 500);
+  });
+
+  // update sidebar
+  document.querySelectorAll('.nav-item').forEach((item, i) => {
+    item.classList.toggle('active', pages[i] === pageId);
+  });
+  // update mobile nav
+  document.querySelectorAll('.mobile-nav-item').forEach((item, i) => {
+    item.classList.toggle('active', pages[i] === pageId);
+  });
+}
+
+// form
+function submitForm() {
+  const name    = document.getElementById('f-name').value.trim();
+  const phone   = document.getElementById('f-phone').value.trim();
+  const service = document.getElementById('f-service').value;
+  if (!name || !phone || !service) {
+    alert('請填寫姓名、聯絡電話，並選擇服務項目。');
+    return;
+  }
+  document.getElementById('formArea').style.display = 'none';
+  document.getElementById('formSuccess').classList.add('show');
+}
+
+function resetForm() {
+  document.getElementById('f-name').value = '';
+  document.getElementById('f-phone').value = '';
+  document.getElementById('f-email').value = '';
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-service').value = '';
+  document.getElementById('f-message').value = '';
+  document.getElementById('formArea').style.display = 'block';
+  document.getElementById('formSuccess').classList.remove('show');
+}
+
+// date min
+const di = document.getElementById('f-date');
+if (di) {
+  const t = new Date(); t.setDate(t.getDate()+1);
+  di.min = t.toISOString().split('T')[0];
+}
+</script>
+</body>
+</html>
